@@ -315,7 +315,7 @@ export const noticesService = {
     try {
       const lang = getLocale();
       const data = await sanityFetch<any[]>(
-        `*[_type == "notice" && language == $lang && isActive == true] | order(publishDate desc) { ${NOTICE_FIELDS} }`,
+        `*[_type == "notice" && isActive == true && (language == $lang || !defined(language))] | order(publishDate desc) { ${NOTICE_FIELDS} }`,
         { lang },
       );
       return { data: data || [] };
@@ -344,7 +344,7 @@ export const noticesService = {
     try {
       const lang = getLocale();
       const data = await sanityFetch<any[]>(
-        `*[_type == "notice" && language == $lang && isUrgent == true && isActive == true] | order(publishDate desc) { ${NOTICE_FIELDS} }`,
+        `*[_type == "notice" && isUrgent == true && isActive == true && (language == $lang || !defined(language))] | order(publishDate desc) { ${NOTICE_FIELDS} }`,
         { lang },
       );
       return { data: data || [] };
@@ -358,7 +358,7 @@ export const noticesService = {
     try {
       const lang = getLocale();
       return sanityFetch<any>(
-        `*[_type == "notice" && language == $lang && slug.current == $slug][0] { ${NOTICE_FIELDS} }`,
+        `*[_type == "notice" && slug.current == $slug && (language == $lang || !defined(language))][0] { ${NOTICE_FIELDS} }`,
         { lang, slug },
       );
     } catch (error) {
@@ -373,7 +373,7 @@ export const noticesService = {
       // Lean projection — only what the popup UI needs, with expiry guard
       return sanityFetch<any[]>(
         `*[_type == "notice"
-            && language == $lang
+            && (language == $lang || !defined(language))
             && displayPopup == true
             && isActive == true
             && (expiryDate == null || expiryDate > now())
