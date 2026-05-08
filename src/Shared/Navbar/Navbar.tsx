@@ -28,7 +28,6 @@ const useMenuConfig = (t: (k: string) => string): MenuItem[] => [
       { label: t('submenu.about_us'), to: '/about' },
       { label: t('submenu.board_directors'), to: '/board-of-directors' },
       { label: t('submenu.management_team'), to: '/management-team' },
-      { label: t('submenu.corporate_team'), to: '/corporate-team' },
       { label: t('submenu.committee'), to: '/committee' },
       { label: t('submenu.organization_structure'), to: '/organization-structure' },
     ],

@@ -3,7 +3,7 @@ import BreadCrumb from "../../BreadCrumb/BreadCrumb";
 import PersonTile from "./components/PersonTile";
 import { aboutService, getStrapiMediaUrl } from "../../services/strapi";
 import { mapStrapiPersonData } from "../../utils/strapiHelpers";
-import { groupByRoleHierarchy } from "../../utils/personHierarchy";
+import { groupByTeamSection } from "../../utils/teamSectionGrouping";
 import { useLanguage } from "../../contexts/LanguageContext";
 
 const ManagementTeam: React.FC = () => {
@@ -33,7 +33,7 @@ const ManagementTeam: React.FC = () => {
     fetch();
   }, [language]);
 
-  const groups = groupByRoleHierarchy(members);
+  const groups = groupByTeamSection(members, 'management');
 
   return (
     <div>

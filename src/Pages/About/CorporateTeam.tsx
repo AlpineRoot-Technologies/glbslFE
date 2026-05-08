@@ -3,7 +3,7 @@ import BreadCrumb from "../../BreadCrumb/BreadCrumb";
 import PersonTile from "./components/PersonTile";
 import { aboutService, getStrapiMediaUrl } from "../../services/strapi";
 import { mapStrapiPersonData } from "../../utils/strapiHelpers";
-import { groupByRoleHierarchy } from "../../utils/personHierarchy";
+import { groupByTeamSection } from "../../utils/teamSectionGrouping";
 import { useLanguage } from "../../contexts/LanguageContext";
 
 const CorporateTeam: React.FC = () => {
@@ -43,13 +43,13 @@ const CorporateTeam: React.FC = () => {
     fetchData();
   }, [language]);
 
-  const corporateGroups = groupByRoleHierarchy(corporateMembers);
-  const monitoringGroups = groupByRoleHierarchy(monitoringMembers);
+  const combinedMembers = [...corporateMembers, ...monitoringMembers];
+  const groups = groupByTeamSection(combinedMembers, 'corporate');
 
-  const renderGroups = (groups: ReturnType<typeof groupByRoleHierarchy>) =>
-    groups.map((group) => (
+  const renderGroups = (groupsToRender: ReturnType<typeof groupByTeamSection>) =>
+    groupsToRender.map((group) => (
       <div key={group.label}>
-        {groups.length > 1 && (
+        {groupsToRender.length > 1 && (
           <div className="flex items-center gap-4 mb-8">
             <hr className="flex-1 border-[#e8e8e8] dark:border-[#333]" />
             <h3 className="text-base font-Garamond font-semibold text-khaki uppercase tracking-widest whitespace-nowrap">
@@ -90,24 +90,9 @@ const CorporateTeam: React.FC = () => {
           {loading && <div className="text-center mt-[60px]"><p className="text-lightGray">Loading corporate team...</p></div>}
           {error && <div className="text-center mt-[60px]"><p className="text-red-500">{error}</p></div>}
 
-          {!loading && !error && corporateMembers.length > 0 && (
+          {!loading && !error && groups.length > 0 && (
             <div className="mt-[60px] space-y-14">
-              <div className="text-center mb-10">
-                <h2 className="font-Garamond text-2xl font-semibold text-lightBlack dark:text-white">Corporate Leadership</h2>
-              </div>
-              {renderGroups(corporateGroups)}
-            </div>
-          )}
-
-          {!loading && !error && monitoringMembers.length > 0 && (
-            <div className="mt-20 space-y-14">
-              <div className="text-center mb-10">
-                <h2 className="font-Garamond text-2xl font-semibold text-lightBlack dark:text-white">Monitoring and Supervision Unit</h2>
-                <p className="text-lightGray max-w-2xl mx-auto mt-2 font-Lora text-sm">
-                  Dedicated unit responsible for monitoring operations and ensuring compliance with regulatory standards
-                </p>
-              </div>
-              {renderGroups(monitoringGroups)}
+              {renderGroups(groups)}
             </div>
           )}
 

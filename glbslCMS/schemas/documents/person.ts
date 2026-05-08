@@ -43,6 +43,28 @@ export default defineType({
       validation: (rule) => rule.required(),
     }),
     defineField({
+      name: 'teamSection',
+      title: 'Team Section',
+      description:
+        'Choose the subsection where this person should appear on Management/Corporate pages.',
+      type: 'string',
+      options: {
+        list: [
+          {title: 'Management - Executive Leadership', value: 'managementExecutive'},
+          {title: 'Management - Department Heads', value: 'managementDepartmentHeads'},
+          {title: 'Management - Monitoring Officers', value: 'managementMonitoringOfficers'},
+          {title: 'Management - Officers', value: 'managementOfficers'},
+          {title: 'Corporate - Leadership', value: 'corporateLeadership'},
+          {title: 'Corporate - Monitoring Officers', value: 'corporateMonitoringOfficers'},
+          {title: 'Corporate - Officers', value: 'corporateOfficers'},
+        ],
+      },
+      hidden: ({document}) =>
+        !['managementTeam', 'corporateTeam', 'monitoringSupervision'].includes(
+          String(document?.personType || ''),
+        ),
+    }),
+    defineField({
       name: 'department',
       title: 'Department',
       type: 'string',
@@ -96,12 +118,13 @@ export default defineType({
       title: 'name',
       subtitle: 'position',
       personType: 'personType',
+      teamSection: 'teamSection',
       media: 'image',
     },
-    prepare({title, subtitle, personType, media}) {
+    prepare({title, subtitle, personType, teamSection, media}) {
       return {
         title,
-        subtitle: `${subtitle || ''} (${personType || ''})`,
+        subtitle: `${subtitle || ''} (${personType || ''}${teamSection ? ` • ${teamSection}` : ''})`,
         media,
       }
     },

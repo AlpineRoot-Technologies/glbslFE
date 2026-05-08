@@ -52,8 +52,10 @@ export const mapStrapiPersonData = (person: any) => {
     id: person._id || person.id,
     name: person.name || person.attributes?.name,
     position: person.position || person.attributes?.position,
+    teamSection: person.teamSection || person.attributes?.teamSection || '',
     email: person.email || person.attributes?.email || '',
     phone: person.phone || person.attributes?.phone || '',
+    order: person.order ?? person.attributes?.order ?? 0,
     // For Sanity images, return the image object itself so getStrapiMediaUrl can process it.
     // For legacy Strapi, return the URL string.
     image: person.image || person.attributes?.image?.data?.attributes?.url || '',

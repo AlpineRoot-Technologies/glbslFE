@@ -24,6 +24,7 @@ const PERSON_FIELDS = `
   _id,
   name,
   position,
+  teamSection,
   department,
   bio,
   email,
