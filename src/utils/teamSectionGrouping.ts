@@ -14,7 +14,8 @@ export interface TeamSectionGroup {
 }
 
 const MANAGEMENT_SECTION_ORDER: { key: string; label: string }[] = [
-  { key: 'managementExecutive', label: 'Executive Leadership' },
+  { key: 'managementCEO', label: 'Chief Executive Officer' },
+  { key: 'managementDeputyCEO', label: 'Deputy Chief Executive Officer' },
   { key: 'managementDepartmentHeads', label: 'Department Heads' },
   { key: 'managementOfficers', label: 'Officers' },
   { key: 'managementMonitoringOfficers', label: 'Monitoring Officers' },
@@ -26,21 +27,37 @@ const CORPORATE_SECTION_ORDER: { key: string; label: string }[] = [
   { key: 'corporateMonitoringOfficers', label: 'Monitoring Officers' },
 ];
 
+/** Deputy CEO / DCEO — checked before CEO so "dceo" and "deputy chief executive" route correctly. */
+function isManagementDeputyExecutivePosition(p: string): boolean {
+  if (p.includes('dceo')) return true;
+  if (p.includes('deputy chief') || p.includes('deputy executive')) return true;
+  if (p.includes('deputy') && p.includes('chief') && p.includes('executive')) return true;
+  if (p.includes('deputy') && p.includes('ceo')) return true;
+  if (p.includes('उपप्रमुख कार्यकारी')) return true;
+  return false;
+}
+
+/** When CMS still has legacy `managementExecutive`, split into CEO vs DCEO by title text. */
+function splitLegacyManagementExecutive(positionRaw: string): 'managementCEO' | 'managementDeputyCEO' {
+  const p = (positionRaw || '').toLowerCase();
+  return isManagementDeputyExecutivePosition(p) ? 'managementDeputyCEO' : 'managementCEO';
+}
+
 function deriveManagementSection(positionRaw: string): string {
   const p = (positionRaw || '').toLowerCase();
   if (p.includes('monitoring') || p.includes('supervision') || p.includes('अनुगमन')) {
     return 'managementMonitoringOfficers';
   }
+  if (isManagementDeputyExecutivePosition(p)) {
+    return 'managementDeputyCEO';
+  }
   if (
     p.includes('chief executive') ||
     p.includes('cheif executive') ||
     p.includes('ceo') ||
-    p.includes('deputy ceo') ||
-    p.includes('dceo') ||
-    p.includes('प्रमुख कार्यकारी') ||
-    p.includes('उपप्रमुख कार्यकारी')
+    p.includes('प्रमुख कार्यकारी')
   ) {
-    return 'managementExecutive';
+    return 'managementCEO';
   }
   if (p.includes('head') || p.includes('प्रमुख')) {
     return 'managementDepartmentHeads';
@@ -80,9 +97,12 @@ export function groupByTeamSection(
   }
 
   for (const m of members) {
-    const explicit = m.teamSection || '';
+    const explicitRaw = m.teamSection || '';
     const fallback = page === 'management' ? deriveManagementSection(m.position) : deriveCorporateSection(m.position);
-    const sectionKey = explicit || fallback;
+    let sectionKey = explicitRaw || fallback;
+    if (page === 'management' && explicitRaw === 'managementExecutive') {
+      sectionKey = splitLegacyManagementExecutive(m.position);
+    }
 
     const target = map.get(sectionKey);
     if (target) {

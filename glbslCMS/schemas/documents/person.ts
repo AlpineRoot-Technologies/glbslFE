@@ -50,7 +50,12 @@ export default defineType({
       type: 'string',
       options: {
         list: [
-          {title: 'Management - Executive Leadership', value: 'managementExecutive'},
+          {title: 'Management - Chief Executive Officer', value: 'managementCEO'},
+          {title: 'Management - Deputy Chief Executive Officer', value: 'managementDeputyCEO'},
+          {
+            title: 'Management - Executive Leadership (legacy — use CEO / DCEO above)',
+            value: 'managementExecutive',
+          },
           {title: 'Management - Department Heads', value: 'managementDepartmentHeads'},
           {title: 'Management - Monitoring Officers', value: 'managementMonitoringOfficers'},
           {title: 'Management - Officers', value: 'managementOfficers'},

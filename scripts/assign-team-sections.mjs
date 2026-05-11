@@ -16,18 +16,27 @@ const client = createClient({
   token: process.env.SANITY_TOKEN,
 });
 
+function isManagementDeputyExecutivePosition(p) {
+  if (p.includes('dceo')) return true;
+  if (p.includes('deputy chief') || p.includes('deputy executive')) return true;
+  if (p.includes('deputy') && p.includes('chief') && p.includes('executive')) return true;
+  if (p.includes('deputy') && p.includes('ceo')) return true;
+  if (p.includes('उपप्रमुख कार्यकारी')) return true;
+  return false;
+}
+
 function deriveManagementSection(positionRaw) {
   const p = String(positionRaw || '').toLowerCase();
   if (p.includes('monitoring') || p.includes('supervision') || p.includes('अनुगमन')) return 'managementMonitoringOfficers';
+  if (isManagementDeputyExecutivePosition(p)) return 'managementDeputyCEO';
   if (
     p.includes('chief executive') ||
     p.includes('cheif executive') ||
     p.includes('ceo') ||
-    p.includes('deputy ceo') ||
-    p.includes('dceo') ||
-    p.includes('प्रमुख कार्यकारी') ||
-    p.includes('उपप्रमुख कार्यकारी')
-  ) return 'managementExecutive';
+    p.includes('प्रमुख कार्यकारी')
+  ) {
+    return 'managementCEO';
+  }
   if (p.includes('head') || p.includes('प्रमुख')) return 'managementDepartmentHeads';
   if (p.includes('officer') || p.includes('अधिकृत') || p.includes('अधिकारी')) return 'managementMonitoringOfficers';
   return 'managementOfficers';

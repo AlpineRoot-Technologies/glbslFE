@@ -3,7 +3,7 @@ import BreadCrumb from "../../BreadCrumb/BreadCrumb";
 import PersonTile from "./components/PersonTile";
 import { aboutService, getStrapiMediaUrl } from "../../services/strapi";
 import { mapStrapiPersonData } from "../../utils/strapiHelpers";
-import { groupByTeamSection } from "../../utils/teamSectionGrouping";
+import { groupByTeamSection, type TeamSectionGroup } from "../../utils/teamSectionGrouping";
 import { useLanguage } from "../../contexts/LanguageContext";
 
 const ManagementTeam: React.FC = () => {
@@ -35,6 +35,12 @@ const ManagementTeam: React.FC = () => {
 
   const groups = groupByTeamSection(members, 'management');
 
+  const sectionHeading = (group: TeamSectionGroup) => {
+    const key = `management_team.section.${group.key}`;
+    const translated = t(key);
+    return translated !== key ? translated : group.label;
+  };
+
   return (
     <div>
       <BreadCrumb title={t('submenu.management_team')} home="/" />
@@ -63,16 +69,14 @@ const ManagementTeam: React.FC = () => {
             )}
 
             {!loading && !error && groups.map((group) => (
-              <div key={group.label}>
-                {groups.length > 1 && (
-                  <div className="flex items-center gap-4 mb-8">
-                    <hr className="flex-1 border-[#e8e8e8] dark:border-[#333]" />
-                    <h3 className="text-base font-Garamond font-semibold text-khaki uppercase tracking-widest whitespace-nowrap">
-                      {group.label}
-                    </h3>
-                    <hr className="flex-1 border-[#e8e8e8] dark:border-[#333]" />
-                  </div>
-                )}
+              <div key={group.key}>
+                <div className="flex items-center gap-4 mb-8">
+                  <hr className="flex-1 border-[#e8e8e8] dark:border-[#333]" />
+                  <h3 className="text-base font-Garamond font-semibold text-khaki uppercase tracking-widest whitespace-nowrap">
+                    {sectionHeading(group)}
+                  </h3>
+                  <hr className="flex-1 border-[#e8e8e8] dark:border-[#333]" />
+                </div>
                 <div className="flex flex-wrap justify-center gap-5 lg:gap-[30px]">
                   {group.members.map((m) => (
                     <div key={m.id} className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-20px)]">

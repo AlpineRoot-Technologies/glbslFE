@@ -95,6 +95,26 @@ export const translations: Translations = {
     en: 'Management Team',
     ne: 'व्यवस्थापन टीम'
   },
+  'management_team.section.managementCEO': {
+    en: 'Chief Executive Officer',
+    ne: 'प्रमुख कार्यकारी अधिकृत'
+  },
+  'management_team.section.managementDeputyCEO': {
+    en: 'Deputy Chief Executive Officer',
+    ne: 'उपप्रमुख कार्यकारी अधिकृत'
+  },
+  'management_team.section.managementDepartmentHeads': {
+    en: 'Department Heads',
+    ne: 'विभाग प्रमुखहरू'
+  },
+  'management_team.section.managementOfficers': {
+    en: 'Officers',
+    ne: 'अधिकृतहरू'
+  },
+  'management_team.section.managementMonitoringOfficers': {
+    en: 'Monitoring Officers',
+    ne: 'अनुगमन अधिकृतहरू'
+  },
   'submenu.corporate_team': {
     en: 'Corporate Team',
     ne: 'कर्पोरेट टीम'
@@ -1210,6 +1230,22 @@ export const translations: Translations = {
   'notices.no_file': {
     en: 'No attachment available',
     ne: 'कुनै संलग्न फाइल उपलब्ध छैन'
+  },
+  'notices.col_sn': {
+    en: 'S.N.',
+    ne: 'क्र.सं.'
+  },
+  'notices.col_notice': {
+    en: 'Notice',
+    ne: 'सूचना'
+  },
+  'notices.col_date': {
+    en: 'Date',
+    ne: 'मिति'
+  },
+  'notices.col_actions': {
+    en: 'Actions',
+    ne: 'कार्य'
   },
 
   // Career Notices page
