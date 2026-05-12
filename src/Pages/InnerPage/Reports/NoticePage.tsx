@@ -295,16 +295,16 @@ const NoticePage: React.FC = () => {
                   <table className="w-full min-w-[640px] text-left border-collapse font-Lora">
                     <thead>
                       <tr className="bg-khaki/15 dark:bg-khaki/20 border-b border-[#e8e8e8] dark:border-[#333]">
-                        <th className="px-4 py-3 text-xs font-Garamond font-semibold uppercase tracking-wide text-lightBlack dark:text-white w-14">
+                        <th className="px-3 py-3 text-xs font-Garamond font-semibold uppercase tracking-wide text-lightBlack dark:text-white w-14">
                           {t('notices.col_sn')}
                         </th>
-                        <th className="px-4 py-3 text-xs font-Garamond font-semibold uppercase tracking-wide text-lightBlack dark:text-white">
+                        <th className="px-3 py-3 text-xs font-Garamond font-semibold uppercase tracking-wide text-lightBlack dark:text-white">
                           {t('notices.col_notice')}
                         </th>
-                        <th className="px-4 py-3 text-xs font-Garamond font-semibold uppercase tracking-wide text-lightBlack dark:text-white whitespace-nowrap w-40">
+                        <th className="px-3 py-3 text-xs font-Garamond font-semibold uppercase tracking-wide text-lightBlack dark:text-white whitespace-nowrap w-40">
                           {t('notices.col_date')}
                         </th>
-                        <th className="px-4 py-3 text-xs font-Garamond font-semibold uppercase tracking-wide text-lightBlack dark:text-white text-right w-52">
+                        <th className="px-3 py-3 text-xs font-Garamond font-semibold uppercase tracking-wide text-lightBlack dark:text-white text-right w-32">
                           {t('notices.col_actions')}
                         </th>
                       </tr>
@@ -319,59 +319,62 @@ const NoticePage: React.FC = () => {
                             key={notice._id}
                             className="border-b border-[#e8e8e8] dark:border-[#333] last:border-b-0 hover:bg-[#faf8f5] dark:hover:bg-[#1a1a1a] transition-colors"
                           >
-                            <td className="px-4 py-4 align-top text-sm text-gray dark:text-lightGray tabular-nums">
+                            <td className="px-3 py-2.5 align-middle text-sm text-gray dark:text-lightGray tabular-nums">
                               {index + 1}
                             </td>
-                            <td className="px-4 py-4 align-top">
-                              <div className="flex flex-wrap items-center gap-2 mb-1">
+                            <td className="px-3 py-2.5 align-middle">
+                              <div className="flex flex-col gap-1 items-start">
                                 {notice.isUrgent && (
                                   <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-500 text-white">
                                     {t('notices.urgent')}
                                   </span>
                                 )}
-                              </div>
-                              <p className="font-Garamond font-semibold text-lightBlack dark:text-white text-base leading-snug">
-                                {notice.title}
-                              </p>
-                              <p className="text-sm text-gray dark:text-lightGray mt-1 leading-relaxed line-clamp-2 md:line-clamp-3">
-                                {truncated}
-                              </p>
-                              {hasNoticeFile(notice) && (
-                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                                  {getNoticeFileName(notice)}
-                                  {getNoticeFileSize(notice) ? ` · ${getNoticeFileSize(notice)}` : ''}
-                                </p>
-                              )}
-                            </td>
-                            <td className="px-4 py-4 align-top text-sm text-gray dark:text-lightGray whitespace-nowrap">
-                              {notice.publishDate ? formatDate(notice.publishDate) : '—'}
-                            </td>
-                            <td className="px-4 py-4 align-top">
-                              <div className="flex flex-wrap justify-end gap-2">
                                 <button
                                   type="button"
                                   onClick={() => handleView(notice)}
-                                  className="inline-flex items-center gap-1.5 text-xs sm:text-sm bg-khaki text-white px-3 py-1.5 rounded hover:opacity-90 transition-opacity"
+                                  className="font-Garamond font-semibold text-left text-lightBlack dark:text-white text-base leading-snug hover:text-khaki focus:outline-none focus-visible:ring-2 focus-visible:ring-khaki/60 rounded-sm"
                                 >
-                                  <BsEye className="w-3.5 h-3.5 shrink-0" />
-                                  {t('notices.view')}
+                                  {notice.title}
+                                </button>
+                              </div>
+                              {(truncated && truncated !== '—') && (
+                                <p className="text-sm text-gray dark:text-lightGray mt-0.5 leading-snug line-clamp-2">
+                                  {truncated}
+                                </p>
+                              )}
+                            </td>
+                            <td className="px-3 py-2.5 align-middle text-sm text-gray dark:text-lightGray whitespace-nowrap">
+                              {notice.publishDate ? formatDate(notice.publishDate) : '—'}
+                            </td>
+                            <td className="px-3 py-2.5 align-middle whitespace-nowrap w-[1%]">
+                              <div className="flex flex-nowrap items-center justify-end gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => handleView(notice)}
+                                  className="inline-flex items-center justify-center p-2 rounded bg-khaki text-white hover:opacity-90 transition-opacity"
+                                  aria-label={t('notices.view')}
+                                  title={t('notices.view')}
+                                >
+                                  <BsEye className="w-4 h-4 shrink-0" aria-hidden />
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => handleDownload(notice)}
                                   disabled={!hasDownloadableAttachment(notice)}
-                                  className="inline-flex items-center gap-1.5 text-xs sm:text-sm bg-green-600 text-white px-3 py-1.5 rounded hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                                  className="inline-flex items-center justify-center p-2 rounded bg-green-600 text-white hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                                  aria-label={t('notices.download')}
+                                  title={t('notices.download')}
                                 >
-                                  <BsDownload className="w-3.5 h-3.5 shrink-0" />
-                                  {t('notices.download')}
+                                  <BsDownload className="w-4 h-4 shrink-0" aria-hidden />
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => handleShare(notice)}
-                                  className="inline-flex items-center gap-1.5 text-xs sm:text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-lightGray px-3 py-1.5 rounded hover:bg-gray-50 dark:hover:bg-[#252525] transition-colors"
+                                  className="inline-flex items-center justify-center p-2 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-lightGray hover:bg-gray-50 dark:hover:bg-[#252525] transition-colors"
+                                  aria-label={t('notices.share')}
+                                  title={t('notices.share')}
                                 >
-                                  <BsShare className="w-3.5 h-3.5 shrink-0" />
-                                  {t('notices.share')}
+                                  <BsShare className="w-4 h-4 shrink-0" aria-hidden />
                                 </button>
                               </div>
                             </td>

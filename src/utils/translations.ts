@@ -905,6 +905,22 @@ export const translations: Translations = {
     en: 'Share',
     ne: 'साझा गर्नुहोस्'
   },
+  'reports.col_sn': {
+    en: 'S.N.',
+    ne: 'क्र.सं.'
+  },
+  'reports.col_report': {
+    en: 'Report',
+    ne: 'प्रतिवेदन'
+  },
+  'reports.col_date': {
+    en: 'Date',
+    ne: 'मिति'
+  },
+  'reports.col_actions': {
+    en: 'Actions',
+    ne: 'कार्य'
+  },
 
   // Notices related translations
   'notices.title': {

@@ -3,9 +3,9 @@ import BreadCrumb from "../../BreadCrumb/BreadCrumb";
 import { BsDownload, BsEye, BsShare } from "react-icons/bs";
 import { HiArrowLongLeft, HiArrowLongRight } from "react-icons/hi2";
 import { Link } from "react-router-dom";
-import PDFPreview from "./PDFPreview";
 import PDFViewer from "./PDFViewer";
 import { reportsService, googleDriveHelpers } from "../../services/strapi";
+import { useLanguage } from "../../contexts/LanguageContext";
 
 export interface StrapiReport {
   _id: string;
@@ -57,6 +57,20 @@ const getDownloadUrl = (r: StrapiReport): string | null => {
 const getFileName = (r: StrapiReport): string =>
   r.fileName || `${r.title}.pdf`;
 
+const formatReportDate = (report: StrapiReport): string => {
+  if (report.publishDate) {
+    return new Date(report.publishDate).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  }
+  if (report.fiscalYear) {
+    return report.quarter ? `${report.fiscalYear} · ${report.quarter}` : report.fiscalYear;
+  }
+  return "—";
+};
+
 // ── Component ─────────────────────────────────────────────────────
 const ReportListPage: React.FC<ReportListPageProps> = ({
   reportType,
@@ -66,6 +80,7 @@ const ReportListPage: React.FC<ReportListPageProps> = ({
   hideBreadcrumb = false,
   hideHeader = false,
 }) => {
+  const { t } = useLanguage();
   const [reports, setReports] = useState<StrapiReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -197,72 +212,95 @@ const ReportListPage: React.FC<ReportListPageProps> = ({
             </div>
           )}
 
-          {/* Reports grid */}
+          {/* Reports list (compact table) */}
           {!loading && !error && reports.length > 0 && (
             <>
-              <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-8">
-                {paginatedReports.map((report) => (
-                  <div
-                    key={report._id}
-                    className="bg-white dark:bg-normalBlack shadow-sm hover:shadow-md transition-shadow duration-300 rounded-sm overflow-hidden"
-                    data-aos="fade-up"
-                    data-aos-duration="800"
-                  >
-                    {/* PDF thumbnail — clicking opens viewer */}
-                    <button
-                      onClick={() => handleView(report)}
-                      className="block w-full text-left"
-                      aria-label={`View ${report.title}`}
-                    >
-                      <PDFPreview title={report.title} description={report.description || ""} />
-                    </button>
-
-                    {/* Card body */}
-                    <div className="border border-[#e8e8e8] dark:border-[#424242] border-t-0">
-                      <div className="py-5 px-6">
-                        <p className="text-xs leading-[24px] text-khaki uppercase font-semibold font-Garamond">
-                          {report.publishDate || report.fiscalYear || "—"}
-                          {report.quarter && ` · ${report.quarter}`}
-                        </p>
-                        <h2 className="text-base lg:text-lg font-semibold text-lightBlack dark:text-white font-Garamond py-2 line-clamp-2">
-                          {report.title}
-                        </h2>
-                        {report.description && (
-                          <p className="text-sm font-normal text-gray dark:text-lightGray font-Lora mb-4 line-clamp-2">
-                            {report.description}
-                          </p>
-                        )}
-
-                        {/* Action buttons — always visible */}
-                        <div className="flex flex-wrap gap-2 mt-3">
-                          <button
-                            onClick={() => handleView(report)}
-                            className="flex items-center gap-1 text-xs bg-khaki text-white px-4 py-2 rounded-sm hover:bg-opacity-90 transition-all duration-300"
-                          >
-                            <BsEye className="w-3 h-3" />
-                            View
-                          </button>
-                          {getDownloadUrl(report) && (
+              <div className="overflow-x-auto rounded-sm border border-[#e8e8e8] dark:border-[#424242] bg-white dark:bg-lightBlack shadow-sm">
+                <table className="w-full min-w-[560px] text-left border-collapse font-Lora">
+                  <thead>
+                    <tr className="bg-khaki/15 dark:bg-khaki/20 border-b border-[#e8e8e8] dark:border-[#333]">
+                      <th className="px-3 py-3 text-xs font-Garamond font-semibold uppercase tracking-wide text-lightBlack dark:text-white w-14">
+                        {t("reports.col_sn")}
+                      </th>
+                      <th className="px-3 py-3 text-xs font-Garamond font-semibold uppercase tracking-wide text-lightBlack dark:text-white">
+                        {t("reports.col_report")}
+                      </th>
+                      <th className="px-3 py-3 text-xs font-Garamond font-semibold uppercase tracking-wide text-lightBlack dark:text-white whitespace-nowrap w-40">
+                        {t("reports.col_date")}
+                      </th>
+                      <th className="px-3 py-3 text-xs font-Garamond font-semibold uppercase tracking-wide text-lightBlack dark:text-white text-right w-32">
+                        {t("reports.col_actions")}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedReports.map((report, index) => {
+                      const globalIndex = (currentPage - 1) * PAGE_SIZE + index;
+                      const desc = (report.description || "").trim();
+                      const truncated =
+                        desc.length > 140 ? `${desc.slice(0, 140).trim()}…` : desc;
+                      return (
+                        <tr
+                          key={report._id}
+                          className="border-b border-[#e8e8e8] dark:border-[#333] last:border-b-0 hover:bg-[#faf8f5] dark:hover:bg-[#1a1a1a] transition-colors"
+                        >
+                          <td className="px-3 py-2.5 align-middle text-sm text-gray dark:text-lightGray tabular-nums">
+                            {globalIndex + 1}
+                          </td>
+                          <td className="px-3 py-2.5 align-middle">
                             <button
-                              onClick={() => handleDownload(report)}
-                              className="flex items-center gap-1 text-xs bg-green-600 text-white px-4 py-2 rounded-sm hover:bg-opacity-90 transition-all duration-300"
+                              type="button"
+                              onClick={() => handleView(report)}
+                              className="font-Garamond font-semibold text-left text-lightBlack dark:text-white text-base leading-snug hover:text-khaki focus:outline-none focus-visible:ring-2 focus-visible:ring-khaki/60 rounded-sm"
                             >
-                              <BsDownload className="w-3 h-3" />
-                              Download
+                              {report.title}
                             </button>
-                          )}
-                          <button
-                            onClick={() => handleShare(report)}
-                            className="flex items-center gap-1 text-xs bg-blue-600 text-white px-4 py-2 rounded-sm hover:bg-opacity-90 transition-all duration-300"
-                          >
-                            <BsShare className="w-3 h-3" />
-                            Share
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                            {truncated && (
+                              <p className="text-sm text-gray dark:text-lightGray mt-0.5 leading-snug line-clamp-2">
+                                {truncated}
+                              </p>
+                            )}
+                          </td>
+                          <td className="px-3 py-2.5 align-middle text-sm text-gray dark:text-lightGray whitespace-nowrap">
+                            {formatReportDate(report)}
+                          </td>
+                          <td className="px-3 py-2.5 align-middle whitespace-nowrap w-[1%]">
+                            <div className="flex flex-nowrap items-center justify-end gap-1">
+                              <button
+                                type="button"
+                                onClick={() => handleView(report)}
+                                className="inline-flex items-center justify-center p-2 rounded bg-khaki text-white hover:opacity-90 transition-opacity"
+                                aria-label={t("reports.view")}
+                                title={t("reports.view")}
+                              >
+                                <BsEye className="w-4 h-4 shrink-0" aria-hidden />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDownload(report)}
+                                disabled={!getDownloadUrl(report)}
+                                className="inline-flex items-center justify-center p-2 rounded bg-green-600 text-white hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                                aria-label={t("reports.download")}
+                                title={t("reports.download")}
+                              >
+                                <BsDownload className="w-4 h-4 shrink-0" aria-hidden />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleShare(report)}
+                                className="inline-flex items-center justify-center p-2 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-lightGray hover:bg-gray-50 dark:hover:bg-[#252525] transition-colors"
+                                aria-label={t("reports.share")}
+                                title={t("reports.share")}
+                              >
+                                <BsShare className="w-4 h-4 shrink-0" aria-hidden />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
 
               {/* Pagination */}
