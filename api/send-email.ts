@@ -381,15 +381,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ error: 'Invalid formType' });
     }
 
-    const emailResponse = await resend.emails.send({
+    const sendOptions: {
+      from: string;
+      to: string;
+      subject: string;
+      html: string;
+      replyTo?: string;
+    } = {
       from: getFromAddress(),
       to: recipientEmail,
       subject,
       html: htmlContent,
-      replyTo: formType === 'contact' || formType === 'loan'
-        ? String(payload.email || '').trim() || undefined
-        : undefined,
-    });
+    };
+
+    if (formType === 'contact' || formType === 'loan') {
+      const replyTo = String(payload.email || '').trim();
+      if (replyTo && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(replyTo)) {
+        sendOptions.replyTo = replyTo;
+      }
+    }
+
+    const emailResponse = await resend.emails.send(sendOptions);
 
     if (emailResponse.error) {
       console.error('Resend API error:', emailResponse.error);
