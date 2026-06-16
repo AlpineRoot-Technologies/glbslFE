@@ -57,8 +57,12 @@ const getResendClient = (): Resend | null => {
   return new Resend(apiKey);
 };
 
-const getFromAddress = (): string =>
-  process.env.RESEND_FROM_EMAIL || 'Gurans Bank Website <noreply@glbsl.com.np>';
+const getFromAddress = (): string => {
+  if (process.env.RESEND_FROM_EMAIL) return process.env.RESEND_FROM_EMAIL;
+  // Default to the institution domain documented for Resend DNS verification.
+  // Override with RESEND_FROM_EMAIL in Vercel once glbsl.com.np is verified.
+  return 'Gurans Bank Website <noreply@guranslaghubitta.com.np>';
+};
 
 const getRecipientEmail = (formType: string): string => {
   switch (formType) {

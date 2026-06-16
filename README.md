@@ -32,7 +32,7 @@ Set these in the **Vercel dashboard** (server-side only — never commit real va
 | Variable | Description |
 |---|---|
 | `RESEND_API_KEY` | Resend API key (required for contact, complaint, and loan forms) |
-| `RESEND_FROM_EMAIL` | Sender address, e.g. `Gurans Bank Website <noreply@glbsl.com.np>` |
+| `RESEND_FROM_EMAIL` | Sender address, e.g. `Gurans Bank Website <noreply@guranslaghubitta.com.np>` |
 | `COMPLAINT_RECIPIENT_EMAIL` | Complaint form recipient (defaults to `info@glbsl.com.np`) |
 | `CONTACT_RECIPIENT_EMAIL` | Contact form recipient (defaults to `info@glbsl.com.np`) |
 | `LOAN_RECIPIENT_EMAIL` | Loan application recipient (defaults to `info@glbsl.com.np`) |
