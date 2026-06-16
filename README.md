@@ -27,6 +27,22 @@ Copy `.env.example` to `.env` and fill in values:
 | `VITE_SANITY_PROJECT_ID` | Sanity project ID |
 | `VITE_SANITY_DATASET` | Sanity dataset (production) |
 
+Set these in the **Vercel dashboard** (server-side only — never commit real values):
+
+| Variable | Description |
+|---|---|
+| `RESEND_API_KEY` | Resend API key (required for contact, complaint, and loan forms) |
+| `RESEND_FROM_EMAIL` | Sender address, e.g. `Gurans Bank Website <noreply@glbsl.com.np>` |
+| `COMPLAINT_RECIPIENT_EMAIL` | Complaint form recipient (defaults to `info@glbsl.com.np`) |
+| `CONTACT_RECIPIENT_EMAIL` | Contact form recipient (defaults to `info@glbsl.com.np`) |
+| `LOAN_RECIPIENT_EMAIL` | Loan application recipient (defaults to `info@glbsl.com.np`) |
+
+Verify the email handler locally:
+
+```bash
+npx tsx scripts/verify-send-email.ts
+```
+
 The `RESEND_API_KEY` must be set in the **Vercel dashboard** only — never in `.env`.
 
 ## CMS Studio

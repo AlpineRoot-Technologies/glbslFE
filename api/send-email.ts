@@ -1,6 +1,19 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { Resend } from 'resend';
 
+const MAX_SHORT = 100;
+const MAX_LONG = 2000;
+const MAX_BODY_BYTES = 32_000;
+
+const ALLOWED_ORIGINS = [
+  'https://guranslaghubitta.com.np',
+  'https://www.guranslaghubitta.com.np',
+  'https://glbsl.com.np',
+  'https://www.glbsl.com.np',
+];
+
+const ALLOWED_FORM_TYPES = new Set(['contact', 'complaint', 'loan']);
+
 // Escape HTML special characters to prevent HTML injection in email templates
 const escapeHtml = (str: string): string => {
   const map: Record<string, string> = {
@@ -15,16 +28,126 @@ const escapeHtml = (str: string): string => {
   return String(str).replace(/[&<>"'`/]/g, (char) => map[char]);
 };
 
-// Safe field helper: escape and preserve newlines as <br>
-const safeField = (value: any): string => {
+const safeField = (value: unknown): string => {
   if (value === undefined || value === null || value === '') return 'N/A';
   return escapeHtml(String(value)).replace(/\n/g, '<br>');
 };
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const safeSubjectPart = (value: unknown, maxLength = 80): string =>
+  String(value ?? 'Unknown')
+    .replace(/[\r\n]/g, ' ')
+    .trim()
+    .slice(0, maxLength) || 'Unknown';
 
-// Email template generators
-const getContactEmailHtml = (data: any) => `
+const formatLoanAmount = (value: unknown): string => {
+  const num = Number(value);
+  if (!Number.isFinite(num) || num <= 0) return 'N/A';
+  return escapeHtml(num.toLocaleString('en-NP'));
+};
+
+const getResendApiKey = (): string | undefined => {
+  // RESEND_API_KEY is the canonical server-side name.
+  // VITE_RESEND_API_KEY is accepted only as a migration fallback for misnamed Vercel env vars.
+  return process.env.RESEND_API_KEY || process.env.VITE_RESEND_API_KEY;
+};
+
+const getResendClient = (): Resend | null => {
+  const apiKey = getResendApiKey();
+  if (!apiKey) return null;
+  return new Resend(apiKey);
+};
+
+const getFromAddress = (): string =>
+  process.env.RESEND_FROM_EMAIL || 'Gurans Bank Website <noreply@glbsl.com.np>';
+
+const getRecipientEmail = (formType: string): string => {
+  switch (formType) {
+    case 'complaint':
+      return process.env.COMPLAINT_RECIPIENT_EMAIL || 'info@glbsl.com.np';
+    case 'loan':
+      return process.env.LOAN_RECIPIENT_EMAIL || 'info@glbsl.com.np';
+    case 'contact':
+    default:
+      return process.env.CONTACT_RECIPIENT_EMAIL || 'info@glbsl.com.np';
+  }
+};
+
+const isValidRecipientEmail = (email: string): boolean =>
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+const getRequestOrigin = (req: VercelRequest): string => {
+  const raw = String(req.headers.origin || req.headers.referer || '').trim();
+  if (!raw) return '';
+  try {
+    const url = new URL(raw);
+    return `${url.protocol}//${url.host}`;
+  } catch {
+    return raw.split('?')[0].replace(/\/$/, '');
+  }
+};
+
+const isAllowedOrigin = (origin: string): boolean => {
+  if (!origin) return false;
+  if (ALLOWED_ORIGINS.includes(origin)) return true;
+  if (process.env.VERCEL_URL && origin === `https://${process.env.VERCEL_URL}`) return true;
+  if (process.env.VERCEL_ENV === 'preview' && /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin)) {
+    return true;
+  }
+  return false;
+};
+
+const validateField = (value: unknown, maxLength: number): string | null => {
+  if (value === undefined || value === null) return null;
+  const str = String(value).trim();
+  if (!str || str.length > maxLength) return null;
+  return str;
+};
+
+const validatePhoneField = (value: unknown): string | null => {
+  const str = validateField(value, 20);
+  if (!str) return null;
+  if (!/^[0-9+\-().\s]{6,20}$/.test(str)) return null;
+  return str;
+};
+
+const validateComplaintPayload = (data: Record<string, unknown>): string | null => {
+  if (!validateField(data.fullName, MAX_SHORT)) return 'Invalid full name';
+  if (!validatePhoneField(data.mobileNumber)) return 'Invalid mobile number';
+  if (!validateField(data.branchOffice, MAX_SHORT)) return 'Invalid branch office';
+  if (!validateField(data.complaint, MAX_LONG)) return 'Invalid complaint details';
+  return null;
+};
+
+const validateContactPayload = (data: Record<string, unknown>): string | null => {
+  if (!validateField(data.name, MAX_SHORT)) return 'Invalid name';
+  const email = validateField(data.email, MAX_SHORT);
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Invalid email address';
+  if (!validatePhoneField(data.phone)) return 'Invalid phone number';
+  if (!validateField(data.subject, MAX_SHORT)) return 'Invalid subject';
+  if (!validateField(data.message, MAX_LONG)) return 'Invalid message';
+  return null;
+};
+
+const validateLoanPayload = (data: Record<string, unknown>): string | null => {
+  if (!validateField(data.fullName, MAX_SHORT)) return 'Invalid full name';
+  const email = validateField(data.email, MAX_SHORT);
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Invalid email address';
+  if (!validatePhoneField(data.mobileNumber)) return 'Invalid mobile number';
+  if (!validateField(data.branchOffice, MAX_SHORT)) return 'Invalid branch office';
+  if (!validateField(data.province, MAX_SHORT)) return 'Invalid province';
+  if (!validateField(data.district, MAX_SHORT)) return 'Invalid district';
+  if (!validateField(data.localBody, MAX_SHORT)) return 'Invalid local body';
+  if (!validateField(data.wardNumber, 10)) return 'Invalid ward number';
+  const amount = Number(data.loanAmount);
+  if (!Number.isFinite(amount) || amount <= 0) return 'Invalid loan amount';
+  if (data.specialNote !== undefined && data.specialNote !== null) {
+    const note = String(data.specialNote).trim();
+    if (note.length > MAX_LONG) return 'Invalid special note';
+  }
+  return null;
+};
+
+const getContactEmailHtml = (data: Record<string, unknown>) => `
 <!DOCTYPE html>
 <html>
 <head>
@@ -60,14 +183,14 @@ const getContactEmailHtml = (data: any) => `
     </div>
     <div class="footer">
       <p>This email was sent from <span class="accent">Gurans Laghubitta Bittiya Sanstha Ltd.</span> website</p>
-      <p style="margin-top: 5px; font-size: 12px; color: #999;">www.guranslaghubitta.com.np</p>
+      <p style="margin-top: 5px; font-size: 12px; color: #999;">www.glbsl.com.np</p>
     </div>
   </div>
 </body>
 </html>
 `;
 
-const getComplaintEmailHtml = (data: any) => `
+const getComplaintEmailHtml = (data: Record<string, unknown>) => `
 <!DOCTYPE html>
 <html>
 <head>
@@ -113,7 +236,7 @@ const getComplaintEmailHtml = (data: any) => `
 </html>
 `;
 
-const getLoanEmailHtml = (data: any) => `
+const getLoanEmailHtml = (data: Record<string, unknown>) => `
 <!DOCTYPE html>
 <html>
 <head>
@@ -139,7 +262,7 @@ const getLoanEmailHtml = (data: any) => `
     </div>
     <div class="content">
       <div class="highlight">
-        <strong>Loan Amount Requested:</strong> <span class="accent">रु ${data.loanAmount ? Number(data.loanAmount).toLocaleString('en-NP') : 'N/A'}</span>
+        <strong>Loan Amount Requested:</strong> <span class="accent">रु ${formatLoanAmount(data.loanAmount)}</span>
       </div>
       <table class="info-table">
         <tr><td>Full Name:</td><td>${safeField(data.fullName)}</td></tr>
@@ -150,7 +273,7 @@ const getLoanEmailHtml = (data: any) => `
         <tr><td>District:</td><td>${safeField(data.district)}</td></tr>
         <tr><td>Local Body:</td><td>${safeField(data.localBody)}</td></tr>
         <tr><td>Ward Number:</td><td>${safeField(data.wardNumber)}</td></tr>
-        <tr><td>Loan Amount:</td><td>रु ${data.loanAmount ? Number(data.loanAmount).toLocaleString('en-NP') : 'N/A'}</td></tr>
+        <tr><td>Loan Amount:</td><td>रु ${formatLoanAmount(data.loanAmount)}</td></tr>
         <tr><td>Special Notes:</td><td>${safeField(data.specialNote)}</td></tr>
         <tr><td>Submitted:</td><td>${new Date().toLocaleString('en-US', { timeZone: 'Asia/Kathmandu' })}</td></tr>
         <tr><td>Language:</td><td>${data.language === 'ne' ? 'Nepali (नेपाली)' : 'English'}</td></tr>
@@ -165,128 +288,121 @@ const getLoanEmailHtml = (data: any) => `
 </html>
 `;
 
-// Validate string field: trim, check required, enforce max length
-const validateField = (value: unknown, maxLength: number): string | null => {
-  if (value === undefined || value === null) return null;
-  const str = String(value).trim();
-  if (str.length > maxLength) return null;
-  return str;
-};
-
-const ALLOWED_ORIGINS = [
-  'https://guranslaghubitta.com.np',
-  'https://www.guranslaghubitta.com.np',
-];
-
-const isAllowedOrigin = (origin: string): boolean => {
-  if (process.env.VERCEL_URL && origin === `https://${process.env.VERCEL_URL}`) return true;
-  return ALLOWED_ORIGINS.some((allowed) => origin === allowed);
-};
-
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Determine request origin (prefer Origin header, fall back to Referer)
-  const origin = (req.headers.origin || req.headers.referer || '').split('?')[0].replace(/\/$/, '');
-
-  // In development (no VERCEL_URL, local origin) allow all; in production enforce allowed list
+  const origin = getRequestOrigin(req);
   const isDev = process.env.NODE_ENV !== 'production' && !process.env.VERCEL_URL;
   const originAllowed = isDev || isAllowedOrigin(origin);
 
-  // Handle CORS
   const corsOrigin = originAllowed ? (origin || ALLOWED_ORIGINS[0]) : ALLOWED_ORIGINS[0];
   res.setHeader('Access-Control-Allow-Origin', corsOrigin);
   res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   res.setHeader('Vary', 'Origin');
 
-  // Handle preflight
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
   }
 
-  // Reject requests from disallowed origins in production
   if (!originAllowed) {
     return res.status(403).json({ error: 'Forbidden' });
   }
 
-  // Only allow POST
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  try {
-    const { formType, data } = req.body;
+  const contentLength = Number(req.headers['content-length'] || 0);
+  if (contentLength > MAX_BODY_BYTES) {
+    return res.status(413).json({ error: 'Payload too large' });
+  }
 
-    if (!formType || !data || typeof data !== 'object') {
-      return res.status(400).json({ error: 'Missing or invalid formType or data' });
+  try {
+    const { formType, data } = req.body ?? {};
+
+    if (typeof formType !== 'string' || !ALLOWED_FORM_TYPES.has(formType)) {
+      return res.status(400).json({ error: 'Invalid formType' });
     }
 
-    // Basic server-side field size validation to prevent payload abuse
-    const MAX_SHORT = 100;
-    const MAX_LONG = 2000;
-    const fieldsTooLong = Object.entries(data).some(([, v]) => {
-      if (typeof v === 'string' && v.length > MAX_LONG) return true;
-      return false;
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+      return res.status(400).json({ error: 'Missing or invalid data' });
+    }
+
+    const payload = data as Record<string, unknown>;
+
+    const fieldsTooLong = Object.entries(payload).some(([, value]) => {
+      return typeof value === 'string' && value.length > MAX_LONG;
     });
     if (fieldsTooLong) {
       return res.status(400).json({ error: 'One or more fields exceed maximum allowed length' });
     }
 
-    // Validate email format if present
-    const emailValue = validateField(data.email, MAX_SHORT);
-    if (data.email !== undefined && (emailValue === null || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue))) {
-      return res.status(400).json({ error: 'Invalid email address' });
+    let validationError: string | null = null;
+    if (formType === 'complaint') validationError = validateComplaintPayload(payload);
+    if (formType === 'contact') validationError = validateContactPayload(payload);
+    if (formType === 'loan') validationError = validateLoanPayload(payload);
+    if (validationError) {
+      return res.status(400).json({ error: validationError });
     }
 
-    // Determine recipient and email content
-    let recipientEmail: string;
+    const resend = getResendClient();
+    if (!resend) {
+      console.error('Email service misconfigured: RESEND_API_KEY is not set');
+      return res.status(503).json({ error: 'Email service is not configured' });
+    }
+
+    const recipientEmail = getRecipientEmail(formType);
+    if (!isValidRecipientEmail(recipientEmail)) {
+      console.error(`Invalid recipient email configured for formType=${formType}`);
+      return res.status(503).json({ error: 'Email service is not configured' });
+    }
+
     let subject: string;
     let htmlContent: string;
 
     switch (formType) {
       case 'contact':
-        recipientEmail = 'info@rootalpine.com';
-        subject = `New Contact Form Submission - ${data.name || 'Unknown'}`;
-        htmlContent = getContactEmailHtml(data);
+        subject = `New Contact Form Submission - ${safeSubjectPart(payload.name)}`;
+        htmlContent = getContactEmailHtml(payload);
         break;
-
       case 'complaint':
-        recipientEmail = 'info@rootalpine.com';
-        subject = `New Complaint Registration - ${data.fullName || 'Unknown'}`;
-        htmlContent = getComplaintEmailHtml(data);
+        subject = `New Complaint Registration - ${safeSubjectPart(payload.fullName)}`;
+        htmlContent = getComplaintEmailHtml(payload);
         break;
-
       case 'loan':
-        recipientEmail = 'info@rootalpine.com';
-        subject = `New Loan Application - ${data.fullName || 'Unknown'} (रु ${data.loanAmount ? Number(data.loanAmount).toLocaleString('en-NP') : 'N/A'})`;
-        htmlContent = getLoanEmailHtml(data);
+        subject = `New Loan Application - ${safeSubjectPart(payload.fullName)} (रु ${formatLoanAmount(payload.loanAmount)})`;
+        htmlContent = getLoanEmailHtml(payload);
         break;
-
       default:
         return res.status(400).json({ error: 'Invalid formType' });
     }
 
-    // Send email via Resend
     const emailResponse = await resend.emails.send({
-      from: 'Gurans Bank Website <noreply@glbsl.com.np>',
+      from: getFromAddress(),
       to: recipientEmail,
-      subject: subject,
+      subject,
       html: htmlContent,
+      replyTo: formType === 'contact' || formType === 'loan'
+        ? String(payload.email || '').trim() || undefined
+        : undefined,
     });
 
-    if (!emailResponse.data?.id) {
-      throw new Error('Email send failed');
+    if (emailResponse.error) {
+      console.error('Resend API error:', emailResponse.error);
+      return res.status(502).json({ error: 'Failed to send email' });
     }
 
-    return res.status(200).json({ 
-      success: true, 
-      message: 'Email sent successfully'
-    });
+    if (!emailResponse.data?.id) {
+      console.error('Resend API returned no message id');
+      return res.status(502).json({ error: 'Failed to send email' });
+    }
 
-  } catch (error: any) {
-    console.error('Error sending email:', error);
-    return res.status(500).json({ 
-      error: 'Failed to send email'
+    return res.status(200).json({
+      success: true,
+      message: 'Email sent successfully',
     });
+  } catch (error) {
+    console.error('Error sending email:', error);
+    return res.status(500).json({ error: 'Failed to send email' });
   }
 }
