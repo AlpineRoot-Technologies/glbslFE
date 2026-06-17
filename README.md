@@ -32,7 +32,9 @@ Set these in the **Vercel dashboard** (server-side only — never commit real va
 | Variable | Description |
 |---|---|
 | `RESEND_API_KEY` | Resend API key (required for contact, complaint, and loan forms) |
-| `RESEND_FROM_EMAIL` | Sender address, e.g. `Gurans Bank Website <noreply@guranslaghubitta.com.np>` |
+| `RESEND_FROM_EMAIL` | Verified sender, e.g. `Gurans Bank Website <noreply@glbsl.com.np>` |
+| `RESEND_SANDBOX_MODE` | Set to `true` only until your domain is verified in Resend |
+| `RESEND_SANDBOX_TO` | With sandbox mode: Resend account email that can receive test mail |
 | `COMPLAINT_RECIPIENT_EMAIL` | Complaint form recipient (defaults to `info@glbsl.com.np`) |
 | `CONTACT_RECIPIENT_EMAIL` | Contact form recipient (defaults to `info@glbsl.com.np`) |
 | `LOAN_RECIPIENT_EMAIL` | Loan application recipient (defaults to `info@glbsl.com.np`) |

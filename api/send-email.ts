@@ -59,12 +59,24 @@ const getResendClient = (): Resend | null => {
 
 const getFromAddress = (): string => {
   if (process.env.RESEND_FROM_EMAIL) return process.env.RESEND_FROM_EMAIL;
-  // Default to the institution domain documented for Resend DNS verification.
-  // Override with RESEND_FROM_EMAIL in Vercel once glbsl.com.np is verified.
+  if (process.env.RESEND_SANDBOX_MODE === 'true') {
+    return 'Gurans Bank Website <onboarding@resend.dev>';
+  }
   return 'Gurans Bank Website <noreply@guranslaghubitta.com.np>';
 };
 
+const isSandboxMode = (): boolean => process.env.RESEND_SANDBOX_MODE === 'true';
+
+const getSandboxRecipient = (): string | null => {
+  const to = String(process.env.RESEND_SANDBOX_TO || '').trim();
+  return isValidRecipientEmail(to) ? to : null;
+};
+
 const getRecipientEmail = (formType: string): string => {
+  if (isSandboxMode()) {
+    const sandboxTo = getSandboxRecipient();
+    if (sandboxTo) return sandboxTo;
+  }
   switch (formType) {
     case 'complaint':
       return process.env.COMPLAINT_RECIPIENT_EMAIL || 'info@glbsl.com.np';
@@ -357,7 +369,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const recipientEmail = getRecipientEmail(formType);
     if (!isValidRecipientEmail(recipientEmail)) {
-      console.error(`Invalid recipient email configured for formType=${formType}`);
+      if (isSandboxMode()) {
+        console.error('RESEND_SANDBOX_MODE is enabled but RESEND_SANDBOX_TO is missing or invalid');
+      } else {
+        console.error(`Invalid recipient email configured for formType=${formType}`);
+      }
       return res.status(503).json({ error: 'Email service is not configured' });
     }
 
@@ -404,7 +420,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const emailResponse = await resend.emails.send(sendOptions);
 
     if (emailResponse.error) {
+      const resendMessage = String(emailResponse.error.message || '');
       console.error('Resend API error:', emailResponse.error);
+      if (resendMessage.includes('domain is not verified')) {
+        console.error(
+          'Resend domain not verified. Add DNS records at https://resend.com/domains ' +
+          'or enable RESEND_SANDBOX_MODE=true with RESEND_SANDBOX_TO for interim testing.',
+        );
+      }
       return res.status(502).json({ error: 'Failed to send email' });
     }
 
