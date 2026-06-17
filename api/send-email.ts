@@ -58,10 +58,12 @@ const getResendClient = (): Resend | null => {
 };
 
 const getFromAddress = (): string => {
-  if (process.env.RESEND_FROM_EMAIL) return process.env.RESEND_FROM_EMAIL;
-  if (process.env.RESEND_SANDBOX_MODE === 'true') {
+  // Sandbox must win over RESEND_FROM_EMAIL — otherwise an unverified custom
+  // from-address silently disables sandbox and Resend returns 502 in production.
+  if (isSandboxMode()) {
     return 'Gurans Bank Website <onboarding@resend.dev>';
   }
+  if (process.env.RESEND_FROM_EMAIL) return process.env.RESEND_FROM_EMAIL;
   return 'Gurans Bank Website <noreply@guranslaghubitta.com.np>';
 };
 
@@ -76,6 +78,8 @@ const getRecipientEmail = (formType: string): string => {
   if (isSandboxMode()) {
     const sandboxTo = getSandboxRecipient();
     if (sandboxTo) return sandboxTo;
+    // Do not fall through to info@glbsl.com.np — that requires a verified domain.
+    return '';
   }
   switch (formType) {
     case 'complaint':
