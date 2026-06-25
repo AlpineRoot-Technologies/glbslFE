@@ -1,4 +1,25 @@
-import {defineType, defineField} from 'sanity'
+import {defineType, defineField, type SlugifierFn} from 'sanity'
+
+const reportSlugify: SlugifierFn = (input: string) => {
+  const ascii = input
+    .toLowerCase()
+    .replace(/[^\x00-\x7F]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '')
+    .replace(/-{2,}/g, '-')
+    .replace(/^-+|-+$/g, '')
+
+  if (ascii.length >= 3) return ascii.slice(0, 200)
+
+  const now = new Date()
+  const datePart = [
+    now.getFullYear(),
+    String(now.getMonth() + 1).padStart(2, '0'),
+    String(now.getDate()).padStart(2, '0'),
+  ].join('')
+  const randPart = Math.random().toString(36).slice(2, 7)
+  return `report-${datePart}-${randPart}`
+}
 
 export default defineType({
   name: 'report',
@@ -21,10 +42,13 @@ export default defineType({
     defineField({
       name: 'slug',
       title: 'Slug',
+      description:
+        'Auto-generated from the title. For Nepali titles a unique date-based slug is created — just click "Generate".',
       type: 'slug',
       options: {
         source: 'title',
         maxLength: 200,
+        slugify: reportSlugify,
       },
       validation: (rule) => rule.required(),
     }),

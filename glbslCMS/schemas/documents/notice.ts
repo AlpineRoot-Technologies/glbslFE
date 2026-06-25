@@ -1,4 +1,36 @@
-import {defineType, defineField} from 'sanity'
+import {defineType, defineField, type SlugifierFn} from 'sanity'
+
+/**
+ * Custom slugifier that handles non-Latin titles (Nepali/Devanagari etc.).
+ *
+ * Strategy:
+ *  1. Attempt standard ASCII slug from the title.
+ *  2. If that produces fewer than 3 usable characters (Devanagari strips to nothing),
+ *     fall back to a deterministic unique slug: notice-YYYYMMDD-<5 random chars>.
+ *
+ * This means Nepali notices always get a valid, unique slug without manual effort.
+ */
+const noticeSlugify: SlugifierFn = (input: string) => {
+  const ascii = input
+    .toLowerCase()
+    .replace(/[^\x00-\x7F]/g, '') // strip non-ASCII (Devanagari etc.)
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '')
+    .replace(/-{2,}/g, '-')
+    .replace(/^-+|-+$/g, '')
+
+  if (ascii.length >= 3) return ascii.slice(0, 200)
+
+  // Fallback: date + random suffix → reproducible-looking, definitely unique
+  const now = new Date()
+  const datePart = [
+    now.getFullYear(),
+    String(now.getMonth() + 1).padStart(2, '0'),
+    String(now.getDate()).padStart(2, '0'),
+  ].join('')
+  const randPart = Math.random().toString(36).slice(2, 7)
+  return `notice-${datePart}-${randPart}`
+}
 
 export default defineType({
   name: 'notice',
@@ -21,10 +53,13 @@ export default defineType({
     defineField({
       name: 'slug',
       title: 'Slug',
+      description:
+        'Auto-generated from the title. For Nepali titles a unique date-based slug is created automatically — just click "Generate".',
       type: 'slug',
       options: {
         source: 'title',
         maxLength: 200,
+        slugify: noticeSlugify,
       },
       validation: (rule) => rule.required(),
     }),

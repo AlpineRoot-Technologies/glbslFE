@@ -314,10 +314,10 @@ export const reportsService = {
 export const noticesService = {
   getNotices: async () => {
     try {
-      const lang = getLocale();
+      // No language filter: show all active notices (both EN and NE) at all times.
       const data = await sanityFetch<any[]>(
-        `*[_type == "notice" && isActive == true && (language == $lang || !defined(language))] | order(publishDate desc) { ${NOTICE_FIELDS} }`,
-        { lang },
+        `*[_type == "notice" && isActive == true] | order(publishDate desc) { ${NOTICE_FIELDS} }`,
+        {},
       );
       return { data: data || [] };
     } catch (error) {
@@ -343,10 +343,9 @@ export const noticesService = {
 
   getUrgentNotices: async () => {
     try {
-      const lang = getLocale();
       const data = await sanityFetch<any[]>(
-        `*[_type == "notice" && isUrgent == true && isActive == true && (language == $lang || !defined(language))] | order(publishDate desc) { ${NOTICE_FIELDS} }`,
-        { lang },
+        `*[_type == "notice" && isUrgent == true && isActive == true] | order(publishDate desc) { ${NOTICE_FIELDS} }`,
+        {},
       );
       return { data: data || [] };
     } catch (error) {
@@ -357,10 +356,9 @@ export const noticesService = {
 
   getNotice: async (slug: string) => {
     try {
-      const lang = getLocale();
       return sanityFetch<any>(
-        `*[_type == "notice" && slug.current == $slug && (language == $lang || !defined(language))][0] { ${NOTICE_FIELDS} }`,
-        { lang, slug },
+        `*[_type == "notice" && slug.current == $slug][0] { ${NOTICE_FIELDS} }`,
+        { slug },
       );
     } catch (error) {
       console.error('Error fetching notice:', error);
@@ -370,11 +368,9 @@ export const noticesService = {
 
   getPopupNotices: async () => {
     try {
-      const lang = getLocale();
-      // Lean projection — only what the popup UI needs, with expiry guard
+      // No language filter: popup notices show regardless of selected language.
       return sanityFetch<any[]>(
         `*[_type == "notice"
-            && (language == $lang || !defined(language))
             && displayPopup == true
             && isActive == true
             && (expiryDate == null || expiryDate > now())
@@ -385,7 +381,7 @@ export const noticesService = {
           noticeImage,
           uploadedFile { asset->{ url, originalFilename, mimeType } }
         }`,
-        { lang },
+        {},
       );
     } catch (error) {
       console.error('Error fetching popup notices:', error);
