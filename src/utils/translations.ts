@@ -83,6 +83,10 @@ export const translations: Translations = {
     en: 'Financial Indicator',
     ne: 'वित्तीय सूचक'
   },
+  'submenu.csr_report': {
+    en: 'CSR Report',
+    ne: 'सीएसआर प्रतिवेदन'
+  },
   'submenu.about_us': {
     en: 'About Us',
     ne: 'हाम्रो बारेमा'
@@ -892,6 +896,14 @@ export const translations: Translations = {
   'reports.staff_training_description': {
     en: 'Staff development and training program reports',
     ne: 'कर्मचारी विकास र तालिम कार्यक्रम प्रतिवेदनहरू'
+  },
+  'reports.csr_title': {
+    en: 'CSR Reports',
+    ne: 'सीएसआर प्रतिवेदनहरू'
+  },
+  'reports.csr_subtitle': {
+    en: 'Corporate Social Responsibility reports and community development initiatives',
+    ne: 'कर्पोरेट सामाजिक उत्तरदायित्व प्रतिवेदन र सामुदायिक विकास पहलहरू'
   },
   'reports.view': {
     en: 'View',

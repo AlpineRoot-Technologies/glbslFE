@@ -7,4 +7,5 @@ export { default as StaffTrainingPage } from './StaffTrainingPage';
 export { default as GovernanceReportPage } from './GovernanceReportPage';
 export { default as InterestRatePage } from './InterestRatePage';
 export { default as FinancialIndicatorPage } from './FinancialIndicatorPage';
+export { default as CSRReportPage } from './CSRReportPage';
 export { default as NoticePage } from './NoticePage';

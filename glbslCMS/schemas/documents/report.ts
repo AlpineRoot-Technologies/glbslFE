@@ -72,6 +72,7 @@ export default defineType({
           {title: 'Governance', value: 'governance'},
           {title: 'Interest Rate', value: 'interest-rate'},
           {title: 'Financial Indicator', value: 'financial-indicator'},
+          {title: 'CSR Report', value: 'csr'},
           {title: 'Other', value: 'other'},
         ],
       },

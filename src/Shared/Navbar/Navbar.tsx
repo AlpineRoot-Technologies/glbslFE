@@ -56,6 +56,7 @@ const useMenuConfig = (t: (k: string) => string): MenuItem[] => [
       { label: t('submenu.governance_report'), to: '/reports/governance-report' },
       { label: t('submenu.interest_rate'), to: '/reports/interest-rate' },
       { label: t('submenu.financial_indicator'), to: '/reports/financial-indicator' },
+      { label: t('submenu.csr_report'), to: '/reports/csr-report' },
     ],
   },
   { key: 'branches', labelKey: 'nav.branches', to: '/branches' },
