@@ -212,6 +212,15 @@ export const structure = (S: StructureBuilder) =>
                     .defaultOrdering([{field: 'publishDate', direction: 'desc'}])
                 ),
               S.listItem()
+                .title('CSR Reports')
+                .icon(DocumentTextIcon)
+                .child(
+                  S.documentTypeList('report')
+                    .title('CSR Reports')
+                    .filter('_type == "report" && reportType == "csr"')
+                    .defaultOrdering([{field: 'publishDate', direction: 'desc'}])
+                ),
+              S.listItem()
                 .title('Other Reports')
                 .icon(DocumentTextIcon)
                 .child(
